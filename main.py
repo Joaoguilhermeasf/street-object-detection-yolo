@@ -1,19 +1,27 @@
 import cv2
-from ultralytics import YOLO
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from ultralytics import YOLO
 
-# Carrega variáveis de ambiente
+# Carrega .env
 load_dotenv()
 url = os.getenv("URL")
 
-# Carrega modelo YOLO (leve e rápido)
+if not url:
+    print("Erro: URL não encontrada no .env")
+    exit()
+
+# Abre o stream
+cap = cv2.VideoCapture(url)
+
+if not cap.isOpened():
+    print("Erro ao abrir o stream")
+    exit()
+
+# Carrega modelo YOLO leve
 model = YOLO("yolov8n.pt")
 
-# Captura de vídeo
-cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
-
-print("Câmera aberta:", cap.isOpened())
+print("Rodando detecção em tempo real... (pressione 'q' para sair)")
 
 while True:
     ret, frame = cap.read()
@@ -22,19 +30,21 @@ while True:
         print("Erro ao capturar frame")
         break
 
-    # 🔥 DETECÇÃO COM YOLO
+    # (Opcional) Reduz tamanho pra ganhar performance
+    frame = cv2.resize(frame, (720, 480))
+
+    # Detecção
     results = model(frame)
 
-    # Desenha caixas na imagem
+    # Desenha caixas
     annotated_frame = results[0].plot()
 
     # Mostra na tela
-    cv2.imshow("Detecção YOLO", annotated_frame)
+    cv2.imshow("YOLO Stream", annotated_frame)
 
-    # Tecla 'q' para sair
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    # Sai ao pressionar 'q'
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Finaliza tudo
 cap.release()
 cv2.destroyAllWindows()
